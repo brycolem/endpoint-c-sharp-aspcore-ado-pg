@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
+using System.Text.Json;
 using CSharpAspCoreAdoPg.Models;
 
 namespace CSharpAspCoreAdoPg.Controllers
@@ -28,10 +29,12 @@ namespace CSharpAspCoreAdoPg.Controllers
                 connection.Open();
                 string query = @"
                     SELECT a.id, a.employer, a.title, a.link, a.company_id,
-                           json_agg(json_build_object('id', n.id, 'noteText', n.note_text, 'applicationId', n.application_id)) as notes
+                        COALESCE(json_agg(json_build_object('id', n.id, 'noteText', n.note_text, 'applicationId', n.application_id)) 
+                        FILTER (WHERE n.id IS NOT NULL), '[]') as notes
                     FROM applications a
                     LEFT JOIN notes n ON a.id = n.application_id
                     GROUP BY a.id, a.employer, a.title, a.link, a.company_id";
+
                 using (var command = new NpgsqlCommand(query, connection))
                 using (var reader = command.ExecuteReader())
                 {
@@ -50,11 +53,24 @@ namespace CSharpAspCoreAdoPg.Controllers
                         if (!reader.IsDBNull(5))
                         {
                             var notesJson = reader.GetString(5);
-                            var notesList = System.Text.Json.JsonSerializer.Deserialize<List<Note>>(notesJson);
-                            if (notesList != null)
+                            try
                             {
-                                app.Notes = notesList;
+                                var notesList = JsonSerializer.Deserialize<List<Note>>(notesJson);
+                                if (notesList != null)
+                                {
+                                    app.Notes = notesList;
+                                }
                             }
+                            catch (JsonException jsonEx)
+                            {
+                                Console.WriteLine($"Error deserializing notes JSON: {jsonEx.Message}");
+                                Console.WriteLine($"Invalid JSON content: {notesJson}");
+                            }
+                        }
+
+                        if (app.Notes == null)
+                        {
+                            app.Notes = new List<Note>();
                         }
 
                         applications.Add(app);
@@ -81,7 +97,7 @@ namespace CSharpAspCoreAdoPg.Controllers
                     command.Parameters.AddWithValue("link", application.Link);
                     command.Parameters.AddWithValue("companyId", application.CompanyId);
 
-                    int newApplicationId = (int)command.ExecuteScalar();
+                    int newApplicationId = (int)(command.ExecuteScalar() ?? 0);
                     application.Id = newApplicationId;
                 }
             }

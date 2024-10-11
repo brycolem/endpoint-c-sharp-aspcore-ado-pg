@@ -1,22 +1,24 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Configuration.AddEnvironmentVariables();
+
+string database = Environment.GetEnvironmentVariable("DATABASE") ?? "DefaultDatabase";
+string dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "DefaultUser";
+string dbPassword = Environment.GetEnvironmentVariable("DB_PWD") ?? "DefaultPassword";
+string dbHost = "10.89.1.5";
+
+string connectionString = $"Server={dbHost};Database={database};User Id={dbUser};Password={dbPassword};";
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
 
-// Comment out HTTPS redirection since we're using HTTP
-// app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
-// Ensure the application runs on HTTP port 8001
 app.Run("http://localhost:8001");

@@ -5,7 +5,7 @@ builder.Configuration.AddEnvironmentVariables();
 string database = Environment.GetEnvironmentVariable("DATABASE") ?? "DefaultDatabase";
 string dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "DefaultUser";
 string dbPassword = Environment.GetEnvironmentVariable("DB_PWD") ?? "DefaultPassword";
-string dbHost = "postgres_bench";
+string dbHost = "localhost";
 
 string connectionString = $"Server={dbHost};Database={database};User Id={dbUser};Password={dbPassword};";
 builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;

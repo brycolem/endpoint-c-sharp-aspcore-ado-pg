@@ -11,11 +11,6 @@ namespace CSharpAspCoreAdoPg.Models
 
         [JsonPropertyName("companyId")]
         public int CompanyId { get; set; }
-        public List<Note> Notes { get; set; }
-
-        public Application()
-        {
-            Notes = new List<Note>();
-        }
+        public List<Note> Notes { get; set; } = new List<Note>();
     }
 }

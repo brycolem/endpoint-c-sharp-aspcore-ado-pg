@@ -1,13 +1,13 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /source
 
-COPY ./*.csproj ./
+COPY ./CSharpAspCoreAdoPg/*.csproj ./
 RUN dotnet restore CSharpAspCoreAdoPg.csproj
 
-COPY . .
+COPY ./CSharpAspCoreAdoPg .
 RUN dotnet publish CSharpAspCoreAdoPg.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

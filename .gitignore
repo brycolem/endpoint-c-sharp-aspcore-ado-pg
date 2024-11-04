@@ -44,3 +44,9 @@ bld/
 
 # Resharper folder
 _ReSharper*/
+
+# Testing folders
+TestResults/
+**/TestResults/
+converage-report/
+**/coverage-report/

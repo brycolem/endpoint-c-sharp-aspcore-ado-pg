@@ -1,5 +1,6 @@
 using CSharpAspCoreAdoPg.Configurations;
 using CSharpAspCoreAdoPg.Services;
+using CSharpAspCoreAdoPg.Repositories;
 using CSharpAspCoreAdoPg.Wrappers;
 
 public class Program
@@ -26,6 +27,7 @@ public class Program
             var dbConfiguration = serviceProvider.GetRequiredService<DatabaseConfiguration>();
             return new DbConnectionFactory(dbConfiguration.ConnectionString);
         });
+        builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
         builder.Services.AddScoped<IApplicationService, ApplicationService>();
         builder.Services.AddControllers();
 

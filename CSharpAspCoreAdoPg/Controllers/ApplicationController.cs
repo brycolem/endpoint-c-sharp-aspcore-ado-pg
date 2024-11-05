@@ -22,6 +22,17 @@ namespace CSharpAspCoreAdoPg.Controllers
             return Ok(applications);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetApplication(int id)
+        {
+            var application = await _applicationService.GetApplicationAsync(id);
+            if (application == null)
+            {
+                return NotFound();
+            }
+            return Ok(application);
+        }
+
         [HttpPost]
         public async Task<IActionResult> AddApplication([FromBody] Application application)
         {

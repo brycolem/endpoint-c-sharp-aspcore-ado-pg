@@ -4,6 +4,7 @@ namespace CSharpAspCoreAdoPg.Models
 
     public class Note
     {
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
         [JsonPropertyName("noteText")]

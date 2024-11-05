@@ -1,92 +1,81 @@
 using Xunit;
-using CSharpAspCoreAdoPg.Services;
+using Moq;
 using CSharpAspCoreAdoPg.Models;
-using CSharpAspCoreAdoPg.Tests.Mocks;
+using CSharpAspCoreAdoPg.Repositories;
+using CSharpAspCoreAdoPg.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Data;
-using System.Data.Common;
+using System.Linq;
 
-namespace CSharpAspCoreAdoPg.Tests.Services
+public class ApplicationServiceTests
 {
-  public class ApplicationServiceTests
+  private readonly Mock<IApplicationRepository> _mockRepository;
+  private readonly ApplicationService _applicationService;
+
+  public ApplicationServiceTests()
   {
-    [Fact]
-    public async Task GetApplicationsAsync_ReturnsApplications()
-    {
-      var mockRecords = new List<IDictionary<string, object>>
-            {
-                new Dictionary<string, object>
-                {
-                    { "id", 1 },
-                    { "employer", "Mock Employer" },
-                    { "title", "Mock Title" },
-                    { "link", "http://mocklink.com" },
-                    { "company_id", 1 },
-                    { "notes", "[{\"id\":1,\"noteText\":\"Mock note\",\"applicationId\":1}]" }
-                }
-            };
+    _mockRepository = new Mock<IApplicationRepository>();
+    _applicationService = new ApplicationService(_mockRepository.Object);
+  }
 
-      var mockDataReader = new MockDataReader(mockRecords);
+  [Fact]
+  public async Task GetApplicationsAsync_ShouldReturnApplications()
+  {
+    // Arrange
+    var mockApplications = new List<Application>
+        {
+            new Application { Id = 1, Employer = "Employer1", Title = "Title1" },
+            new Application { Id = 2, Employer = "Employer2", Title = "Title2" }
+        };
+    _mockRepository.Setup(repo => repo.GetAllApplicationsAsync()).ReturnsAsync(mockApplications);
 
-      var mockCommand = new MockDbCommand
-      {
-        ExecuteReaderAsyncFunc = () => Task.FromResult<DbDataReader>(mockDataReader)
-      };
+    // Act
+    var result = await _applicationService.GetApplicationsAsync();
 
-      var mockConnection = new MockDbConnection
-      {
-        Command = mockCommand
-      };
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal(2, result.Count());
+  }
 
-      var mockConnectionFactory = new MockDbConnectionFactory(mockConnection);
+  [Fact]
+  public async Task GetApplicationAsync_ShouldReturnApplication_WhenExists()
+  {
+    // Arrange
+    var mockApplication = new Application { Id = 1, Employer = "Employer1", Title = "Title1" };
+    _mockRepository.Setup(repo => repo.GetApplicationByIdAsync(1)).ReturnsAsync(mockApplication);
 
-      var service = new ApplicationService(mockConnectionFactory);
+    // Act
+    var result = await _applicationService.GetApplicationAsync(1);
 
-      var applications = await service.GetApplicationsAsync();
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal(1, result?.Id);
+    Assert.Equal("Employer1", result?.Employer);
+  }
 
-      Assert.NotNull(applications);
-      var applicationList = applications.ToList();
-      Assert.Single(applicationList);
-      var application = applicationList[0];
-      Assert.Equal(1, application.Id);
-      Assert.Equal("Mock Employer", application.Employer);
-      Assert.Equal("Mock Title", application.Title);
-      Assert.Equal("http://mocklink.com", application.Link);
-      Assert.Equal(1, application.CompanyId);
-      Assert.NotNull(application.Notes);
-      Assert.Single(application.Notes);
-      Assert.Equal("Mock note", application.Notes[0].NoteText);
-    }
+  [Fact]
+  public async Task GetApplicationAsync_ShouldReturnNull_WhenNotExists()
+  {
+    // Arrange
+    _mockRepository.Setup(repo => repo.GetApplicationByIdAsync(99)).ReturnsAsync((Application?)null);
 
-    [Fact]
-    public async Task AddApplicationAsync_AddsApplication()
-    {
-      var application = new Application
-      {
-        Employer = "Test Employer",
-        Title = "Test Title",
-        Link = "http://testlink.com",
-        CompanyId = 2
-      };
+    // Act
+    var result = await _applicationService.GetApplicationAsync(99);
 
-      var mockCommand = new MockDbCommand
-      {
-        ExecuteScalarAsyncFunc = () => Task.FromResult<object>(1)
-      };
+    // Assert
+    Assert.Null(result);
+  }
 
-      var mockConnection = new MockDbConnection
-      {
-        Command = mockCommand
-      };
+  [Fact]
+  public async Task AddApplicationAsync_ShouldInvokeRepositoryMethod()
+  {
+    // Arrange
+    var newApplication = new Application { Employer = "New Employer", Title = "New Title" };
 
-      var mockConnectionFactory = new MockDbConnectionFactory(mockConnection);
+    // Act
+    await _applicationService.AddApplicationAsync(newApplication);
 
-      var service = new ApplicationService(mockConnectionFactory);
-
-      await service.AddApplicationAsync(application);
-
-      Assert.Equal(1, application.Id);
-    }
+    // Assert
+    _mockRepository.Verify(repo => repo.AddApplicationAsync(newApplication), Times.Once);
   }
 }
